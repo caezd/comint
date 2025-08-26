@@ -1,1 +1,3 @@
 # comint
+
+![logo](./logo.svg)
