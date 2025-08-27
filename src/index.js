@@ -26,6 +26,33 @@ const DEFAULTS = {
         },
     },
 
+    reactions: [
+        {
+            emoji: "👍",
+            name: "Like",
+        },
+        {
+            emoji: "❤️",
+            name: "Love",
+        },
+        {
+            emoji: "😂",
+            name: "Haha",
+        },
+        {
+            emoji: "😮",
+            name: "Wow",
+        },
+        {
+            emoji: "😢",
+            name: "Sad",
+        },
+        {
+            emoji: "😡",
+            name: "Angry",
+        },
+    ],
+
     // Titre du fil commentaires (mode per_topic)
     comment_title_template(title, id) {
         const tag = this.tag_on_create.in_title
