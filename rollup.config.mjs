@@ -7,14 +7,14 @@ export default [
         input: "src/index.js",
         output: [
             {
-                file: "dist/comint.esm.js",
+                file: "dist/commint.esm.js",
                 format: "esm",
                 sourcemap: true,
             },
             {
-                file: "dist/comint.js",
+                file: "dist/commint.js",
                 format: "iife",
-                name: "Comint",
+                name: "Commint",
                 sourcemap: true,
             },
         ],

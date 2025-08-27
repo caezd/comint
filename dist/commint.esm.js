@@ -302,4 +302,5 @@ class Commint {
     }
 }
 
-export default Commint;
+export { Commint as default };
+//# sourceMappingURL=commint.esm.js.map
