@@ -1,8 +1,20 @@
 var Commint = (function () {
     'use strict';
 
+    const ensureStyle = (() => {
+        const loaded = new Set();
+        return (id, cssText) => {
+            if (loaded.has(id)) return;
+            const s = document.createElement("style");
+            s.dataset.id = id;
+            s.textContent = cssText;
+            document.head.appendChild(s);
+            loaded.add(id);
+        };
+    })();
+
     const DEFAULTS = {
-        allowed_forums: [1, 2, 3],
+        allowed_forums: [1, 2, 3, 4],
 
         // Acheminement des commentaires
         // - "per_post" : un sujet de commentaires par RP (créé si absent)
@@ -14,7 +26,7 @@ var Commint = (function () {
         single_topic_id: null,
 
         // UI
-        use_overlay: false, // false => redirection vers l’éditeur natif
+        use_overlay: true, // false => redirection vers l’éditeur natif
         button_class: "commint-btn",
         button_append: ".post_details",
         post_class: "post",
@@ -98,6 +110,48 @@ var Commint = (function () {
         return await Moderactor.env();
     };
 
+    const ensureCSSFor = (selector) => {
+        let found = false;
+
+        for (const sheet of Array.from(document.styleSheets)) {
+            let rules;
+            try {
+                rules = sheet.cssRules;
+            } catch (e) {
+                continue; // feuilles cross-origin
+            }
+            if (!rules) continue;
+            for (const r of Array.from(rules)) {
+                if (r.selectorText === selector) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found) break;
+        }
+        return found;
+    };
+
+    ensureStyle(
+        "commint-animations",
+        `@keyframes fadeIn {
+        0% {
+            opacity: 0;
+        }
+        100% {
+            opacity: 1;
+        }
+    }
+    @keyframes slideFromBottom {
+        0% {
+            transform: translate3d(0, var(--initial-transform, 100%), 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }`
+    );
+
     class Commint {
         constructor(options) {
             if (!window.Moderactor)
@@ -105,7 +159,7 @@ var Commint = (function () {
 
             this.config = { ...DEFAULTS, ...options };
             this.currentPosts = new Map();
-            this.openedPostContext = null;
+            this.currentPostContext = null;
             this.quoted = "";
             this.init();
         }
@@ -123,6 +177,21 @@ var Commint = (function () {
 
             if (this.config.allowed_forums.length === 0)
                 throw new Error("At least one ID is required in allowed_forums.");
+            this.config.allowed_forums = this.config.allowed_forums.map((i) =>
+                Number(i)
+            );
+            this.config.allowed_forums = this.config.allowed_forums.filter(
+                (i) => i !== this.config.comments_forum_id
+            );
+
+            // si d'après les breadcrumbs, le topic actuel est dans un forum à l'extérieur de ce qui est autorisé :
+            // this.env.scherama.breadcrumbs.items, filter tous les [].url.includes('/f[id]) en regex
+            const isAllowed = this.config.allowed_forums.some((id) =>
+                this.env.schema.breadcrumbs.items.some((item) =>
+                    item.url.includes(`/f${id}`)
+                )
+            );
+            if (!isAllowed) return;
 
             if (this.config.mode === "single_topic" && !this.config.single_topic_id)
                 throw new Error(
@@ -130,7 +199,14 @@ var Commint = (function () {
                 );
 
             // init language
-            if (this.config.lang) T.lang(this.config.lang);
+            this.config.lang =
+                this.config.lang ||
+                (typeof navigator !== "undefined" && navigator.language
+                    ? navigator.language.replace(/-.*/, "")
+                    : null) ||
+                this.env.user.lang ||
+                "fr";
+            T.lang(this.config.lang);
 
             // pre-fetch the comment topic for each post
             document
@@ -147,7 +223,7 @@ var Commint = (function () {
             const comments = JSON.parse(
                 localStorage.getItem("posts_to_comments") || "{}"
             );
-            if (comments[postId]) return comments[postId];
+            if (comments[Number(postId)]) return comments[Number(postId)];
         }
         /**
          * Find a comments topic by its associated RP tag.
@@ -186,13 +262,16 @@ var Commint = (function () {
          */
         async ensureCommentTopic(id) {
             const cache = this.getTopic(id);
-            if (cache && cache.time && Date.now() - cache.time <= 3600000)
+            if (cache && cache.time && Date.now() - cache.time < 3600000) {
+                console.log("byCache:", cache);
                 return cache;
+            }
 
             // chercher via tag
             const viaTag = await this.findCommentsTopicByTag(id);
             if (viaTag?.id) {
                 this.setTopic(id, viaTag);
+                console.log("byTag:", viaTag);
                 return viaTag;
             }
 
@@ -208,6 +287,7 @@ var Commint = (function () {
 
             if (created?.id) {
                 this.setTopic(id, created);
+                console.log("byCreation:", created);
                 return created.id;
             }
 
@@ -259,7 +339,7 @@ var Commint = (function () {
                 T("comment_button") + (count > 0 ? ` (${count})` : "");
             btn.addEventListener(
                 "click",
-                this.onButtonClick({ post, comment_post_id })
+                this.onButtonClick({ post, comment_post_id, btn })
             );
             post.querySelector(this.config.button_append).appendChild(btn);
         }
@@ -288,20 +368,93 @@ var Commint = (function () {
             }
         }
 
-        onButtonClick({ post, comment_post_id }) {
+        onButtonClick({ post, comment_post_id, btn }) {
             return async () => {
                 this.collectPostContext(post);
-                const quoted = this.captureSelectedText(post);
+                this.currentPostContext = {
+                    ...this.currentPostContext,
+                    post,
+                    comment_post_id,
+                    btn,
+                };
+                this.captureSelectedText(post);
                 if (!this.config.use_overlay) {
                     if (this.config.mode === "single_topic")
                         location.href = `/post?mode=reply&t=${this.config.single_topic_id}`;
                     else {
                         location.href = `/post?mode=reply&t=${comment_post_id}`;
                     }
-                    return;
                 }
-                console.log("Button clicked for post:", post, ctx, quoted);
+                console.log("Opening overlay for post", post, comment_post_id);
+                console.log("Overlay context", this.currentPostContext);
+                console.log("Overlay quoted", this.quoted);
+
+                this.openOverlay({
+                    title: T("overlay_title"),
+                    preset: this.quoted ? `${this.quoted}` : "",
+                });
             };
+        }
+
+        openOverlay({ title, preset, onSubmit }) {
+            const d = document.createElement("dialog");
+            const dClassname = "commint-dialog";
+            d.className = dClassname;
+            if (!ensureCSSFor(`.${dClassname}`)) {
+                ensureStyle(
+                    "commint-overlay",
+                    `.commint-dialog { 
+                    inset:auto;
+                    max-width:none;
+                    padding: 20px;
+                    border:0;
+                    position:fixed;
+                    bottom: 0;
+                    width:100%;
+                    display:flex;
+                    background-color:white;
+                    z-index:9999;
+                    will-change: transform;
+                    animation-name: slideFromBottom;
+                    transition: transform .5s cubic-bezier(.32, .72, 0, 1);
+                    animation-duration: .5s;
+                    animation-timing-function: cubic-bezier(0.32,0.72,0,1);
+                }
+                .commint-dialog::backdrop { 
+                    background: #0008; 
+                    animation-duration: .5s;
+                    animation-timing-function: cubic-bezier(0.32,0.72,0,1);
+                    animation-name: fadeIn;
+                    animation-fill-mode: forwards;
+                }
+                .commint-form {
+                    max-width: var(--container, 940px);
+                    width: 100%;
+                    margin: auto;
+                }`
+                );
+            }
+            d.innerHTML = `
+            <form class="commint-form">
+                <header style="display:flex;margin-bottom:8px;">
+                    <h2 style="margin:0;font-size:16px;">${title ?? ""}</h2>
+                </header>
+                <textarea data-body rows="8" style="width:100%;resize:vertical" aria-label="Comment"></textarea>
+                <button type="submit">Submit</button>
+            </form>
+            <form method="dialog">
+                <button aria-label="Fermer" type="close">✕</button>
+            </form>
+        `;
+            document.body.appendChild(d);
+            d.showModal();
+
+            d.addEventListener("close", () => {
+                if (d.returnValue === "ok") onSubmit?.(d);
+                d.remove();
+            });
+
+            return d;
         }
     }
 
