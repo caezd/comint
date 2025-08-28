@@ -4,7 +4,7 @@ import { T } from "./i18n.js";
 import { qs, qsa, parsePostId, getSelectionIn } from "./dom.js";
 import { Service } from "./service.js";
 import { OverlayView } from "./overlay-view.js";
-import "./style.css"; 
+import "./style.css";
 
 export default class Commint {
     constructor(options) {
@@ -26,13 +26,11 @@ export default class Commint {
             if (txt) this._lastQuoteByPost.set(post, txt);
         };
 
-        // quand l'utilisateur termine sa sélection
         post.addEventListener("mouseup", grab);
         post.addEventListener("keyup", (e) => {
             if (e.key?.startsWith("Arrow") || e.key === "Shift") grab();
         });
 
-        // bonus : si tu veux être ultra-fiable
         document.addEventListener("selectionchange", () => {
             // on ne mémorise que si la sélection est dans ce post
             const sel = window.getSelection?.();
@@ -124,7 +122,6 @@ export default class Commint {
             this.onGlobalButtonClick({ container, commentTopic, btn })
         );
 
-        // Choisis où l’insérer (priorité: config > header du topic > haut du container)
         const host =
             document.querySelector(this.cfg.global_button_append || "") ||
             document.querySelector(".links_bar") ||
@@ -159,13 +156,13 @@ export default class Commint {
     }
 
     onGlobalButtonClick({ container, commentTopic, btn }) {
-        // citation: dernière sélection mémorisée (solution A), sinon relis la sélection brute
+        // Dernière sélection mémorisée, sinon relis la sélection brute
         const quoted =
             this._lastQuoteByPost.get(container) ||
             getSelectionIn(container) ||
             "";
 
-        // Essaie de déduire le post “source” depuis la sélection (pour author/id/permalink)
+        // Déduire le post “source” depuis la sélection (pour author/id/permalink)
         let post =
             (() => {
                 const sel = window.getSelection?.();
@@ -252,7 +249,7 @@ export default class Commint {
         e.preventDefault();
         const fd = new FormData(e.currentTarget);
         const body = fd.get("body") || "";
-        const reaction = fd.get("reaction");
+        /* const reaction = fd.get("reaction"); */
 
         const { id, permalink, quoted, author, commentTopic } =
             this.currentPostCtx;
@@ -262,20 +259,18 @@ export default class Commint {
             body,
             quote: quoted,
             op: author,
-            reaction: this.cfg.reaction_template(
+            /* reaction: this.cfg.reaction_template(
                 this.cfg.reactions.find((r) => r.name === reaction)
-            ),
+            ), */
         });
 
         if (this.cfg.debug)
             console.log({ body, quoted, reaction, message, commentTopic });
 
-        // → ici : appel réel à Moderactor pour poster la réponse dans commentTopic.id
-
         await Moderactor.topic(commentTopic.id)
-            .post({ message })
+            .post({ message }, { disable_html: 1 })
             .then(() => {
-                dialog.close(); // laisse Potion gérer l’UX “toast” si tu veux
+                dialog.close();
             });
     }
 }

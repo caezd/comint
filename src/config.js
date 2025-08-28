@@ -21,14 +21,17 @@ export const DEFAULTS = {
         in_title: false,
         format: (id) => `#p${id}`,
     },
-    reactions: [
-        { emoji: "👍", name: "Like" },
-        { emoji: "❤️", name: "Love" },
-        { emoji: "😂", name: "Haha" },
-        { emoji: "😮", name: "Wow" },
-        { emoji: "😢", name: "Sad" },
-        { emoji: "😡", name: "Angry" },
-    ],
+    reactions: {
+        active: false,
+        items: [
+            { emoji: "👍", name: "Like" },
+            { emoji: "❤️", name: "Love" },
+            { emoji: "😂", name: "Haha" },
+            { emoji: "😮", name: "Wow" },
+            { emoji: "😢", name: "Sad" },
+            { emoji: "😡", name: "Angry" },
+        ],
+    },
     button_content_template({ text, count }) {
         return text + (count ? ` (${count})` : "");
     },
@@ -42,18 +45,17 @@ export const DEFAULTS = {
         const tagLine = `${this.tag_on_create.format(id)}\n\n`;
         return `${tagLine}[b]Commentaires pour : ${rpTopic.title}[/b]\nRP : ${rpTopic.url}\n\n`;
     },
-    reaction_template(reaction) {
+    /* reaction_template(reaction) {
         return reaction
             ? `<div class="commint-post-reaction" data-name="${reaction.name}">${reaction.emoji}</div>`
             : "";
-    },
-    build_payload({ permalink, id, body, quote, op, reaction }) {
+    }, */
+    build_payload({ permalink, id, body, quote, op /* reaction */ }) {
         const header = quote
             ? `[quote="@${op}"]${quote}[/quote]\n`
             : `"@${op}"\n`;
-        return `${header}[url=${permalink}#${id}]→ Voir le message RP[/url]\n\n${body}${
-            reaction ? `\n\n${reaction}` : ""
-        }`;
+        return `${header}[url=${permalink}#${id}]→ Voir le message RP[/url]\n\n${body}`;
+        // ${reaction ? `\n\n${reaction}` : ""}`
     },
     lang: (navigator.language || "fr").replace(/-.*/, "") || "fr",
     debug: true,
