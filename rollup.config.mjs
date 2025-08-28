@@ -1,5 +1,6 @@
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
+import css from "rollup-plugin-css-only";
 import { terser } from "rollup-plugin-terser";
 
 export default [
@@ -18,6 +19,10 @@ export default [
                 sourcemap: true,
             },
         ],
-        plugins: [resolve(), commonjs() /*terser()*/],
+        plugins: [
+            resolve(),
+            commonjs(),
+            css({ output: "bundle.css" }) /*terser()*/,
+        ],
     },
 ];

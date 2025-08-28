@@ -29,6 +29,12 @@ importers:
       rollup:
         specifier: ^4.18.0
         version: 4.48.1
+      rollup-plugin-css-only:
+        specifier: ^4.5.2
+        version: 4.5.2(rollup@4.48.1)
+      rollup-plugin-import-css:
+        specifier: ^4.0.2
+        version: 4.0.2(rollup@4.48.1)
       rollup-plugin-terser:
         specifier: ^7.0.2
         version: 7.0.2(rollup@4.48.1)
@@ -561,6 +567,18 @@ packages:
     resolution: {integrity: sha512-9dkvaxAsk/xNXSJzMgFqqMCuFgt2+KsOFek3TMLfo8NCPfWpBmqwyNn5Y+NX56QUYfCtsyhF3ayiboEoUmJk/A==}
     engines: {node: 20 || >=22}
     hasBin: true
+
+  rollup-plugin-css-only@4.5.2:
+    resolution: {integrity: sha512-7rj9+jB17Pz8LNcPgtMUb16JcgD8lxQMK9HcGfAVhMK3na/WXes3oGIo5QsrQQVqtgAU6q6KnQNXJrYunaUIQQ==}
+    engines: {node: '>=14'}
+    peerDependencies:
+      rollup: <5
+
+  rollup-plugin-import-css@4.0.2:
+    resolution: {integrity: sha512-ud+/BxNpzjZD8Ak/GSCezC1LRbGXaKFKNjDwJu9NMX1dQlrT0J/vmNfuYq1zX2lTbwtTyPlnGVctIm6wGRDx2A==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      rollup: ^2.x.x || ^3.x.x || ^4.x.x
 
   rollup-plugin-terser@7.0.2:
     resolution: {integrity: sha512-w3iIaU4OxcF52UUXiZNsNeuXIMDvFrr+ZXK6bFZ0Q60qyVfq4uLptoS4bbq3paG3x216eQllFZX7zt6TIImguQ==}
@@ -1182,6 +1200,16 @@ snapshots:
     dependencies:
       glob: 11.0.3
       package-json-from-dist: 1.0.1
+
+  rollup-plugin-css-only@4.5.2(rollup@4.48.1):
+    dependencies:
+      '@rollup/pluginutils': 5.2.0(rollup@4.48.1)
+      rollup: 4.48.1
+
+  rollup-plugin-import-css@4.0.2(rollup@4.48.1):
+    dependencies:
+      '@rollup/pluginutils': 5.2.0(rollup@4.48.1)
+      rollup: 4.48.1
 
   rollup-plugin-terser@7.0.2(rollup@4.48.1):
     dependencies:

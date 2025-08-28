@@ -18,6 +18,8 @@
         "http-server": "^14.1.1",
         "rimraf": "^6.0.1",
         "rollup": "^4.18.0",
+        "rollup-plugin-css-only": "^4.5.2",
+        "rollup-plugin-import-css": "^4.0.2",
         "rollup-plugin-terser": "^7.0.2"
     },
     "keywords": [],
